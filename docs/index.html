@@ -33,13 +33,6 @@ a:focus-visible{outline:1px solid var(--accent);outline-offset:2px}
   animation:drift 70s ease-in-out infinite alternate;
 }
 @keyframes drift{to{transform:translate(-120px,-70px)}}
-.sweep{
-  position:fixed; left:0; right:0; top:-3px; height:2px; z-index:-1; pointer-events:none;
-  background:linear-gradient(90deg, transparent 5%, rgba(0,229,255,.28), transparent 95%);
-  box-shadow:0 0 14px rgba(0,229,255,.25);
-  animation:sweep 10s linear infinite 2.5s;
-}
-@keyframes sweep{0%{top:-3px;opacity:0}6%{opacity:1}90%{opacity:1}100%{top:102vh;opacity:0}}
 body::after{ /* CRT scanlines */
   content:""; position:fixed; inset:0; z-index:50; pointer-events:none;
   background:repeating-linear-gradient(0deg, rgba(255,255,255,.013) 0 1px, transparent 1px 3px);
@@ -152,13 +145,12 @@ footer{display:flex;align-items:center;gap:24px;flex-wrap:wrap;color:var(--weak)
 }
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.01ms!important;animation-delay:0ms!important;animation-iteration-count:1!important}
-  .sweep,.grid-bg{animation:none!important;display:none}
+  .grid-bg{animation:none!important;display:none}
 }
 </style>
 </head>
 <body>
 <div class="grid-bg" aria-hidden="true"></div>
-<div class="sweep" aria-hidden="true"></div>
 
 <header class="status">
   <span class="sq"></span>
@@ -383,22 +375,22 @@ function rhythmPanel(days) {
 }
 
 const LANG_COLORS = { /* palette validated for CVD separation on the dark surface */
-  TypeScript:"#4f8ff7", JavaScript:"#f1e05a", Python:"#4584b6", Rust:"#e8a87c",
-  "C++":"#f34b7d", "C#":"#2ea043", C:"#96a7c4", HTML:"#ff7b54", CSS:"#c084fc",
+  TypeScript:"#4f8ff7", JavaScript:"#f1e05a", Python:"#3f8fd6", Rust:"#eda265",
+  "C++":"#f34b7d", "C#":"#2ea043", C:"#96a7c4", HTML:"#ff9447", CSS:"#c084fc",
   SCSS:"#e36ba4", Java:"#d29343", Lua:"#8586e8", Luau:"#8586e8", Shell:"#7ee787",
   PowerShell:"#5391fe", Batchfile:"#9aa7b0", CMake:"#9aa7b0", Makefile:"#9aa7b0",
   Dockerfile:"#4a97c9", GLSL:"#66b2cc", WGSL:"#66b2cc", Svelte:"#ff5c33",
   Vue:"#41b883", Go:"#29b6d8", Kotlin:"#b07bf5", Swift:"#f05138", Ruby:"#ea5f7a",
   Dart:"#40c4ff", "Jupyter Notebook":"#da8b45",
 };
-const OTHER = "#6e7681";
+const OTHER = "#7d746a";
 const fmtBytes = v => v >= 1e6 ? (v / 1e6).toFixed(1) + " MB" : Math.max(1, Math.round(v / 1e3)) + " KB";
 
 async function languagesPanel() {
   let agg = null, src = "";
   try { // nightly export from the profile workflow — covers private repos once a PAT secret exists
     const j = await cached("langs.json");
-    if (j.languages && Object.keys(j.languages).length) { agg = j.languages; src = "ALL REPOS · BYTES · UPDATED NIGHTLY"; }
+    if (j.languages && Object.keys(j.languages).length) { agg = j.languages; src = "ALL REPOS · BYTES"; }
   } catch {}
   try {
     if (!agg) { // fallback: aggregate public repos live
@@ -411,7 +403,7 @@ async function languagesPanel() {
     const total = Object.values(agg).reduce((a, b) => a + b, 0);
     if (!total) throw new Error("no data");
     let entries = Object.entries(agg).sort((a, b) => b[1] - a[1]);
-    const main = entries.filter(([, v], i) => i < 7 && v / total >= .005);
+    const main = entries.filter(([, v], i) => i < 8 && v / total >= .005);
     const rest = entries.slice(main.length).reduce((a, [, v]) => a + v, 0);
     if (rest) main.push(["OTHER", rest]);
     const seg = ([k, v]) => {

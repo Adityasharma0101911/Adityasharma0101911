@@ -38,7 +38,8 @@ jobs:
             jq -s 'reduce .[] as $m ({}; reduce ($m | to_entries[]) as $e (.; .[$e.key] += $e.value))
                    | {languages: ., source: "all-repos"}' > docs/langs.json
           else
-            echo '{"languages":{},"source":"public-fallback"}' > docs/langs.json
+            # no PAT — keep the committed langs.json (generated locally) untouched
+            echo "PROFILE_3D_TOKEN not set; leaving docs/langs.json as-is"
           fi
 
       - name: Commit & Push
