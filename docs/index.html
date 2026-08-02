@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D Contributions · Aditya Sharma</title>
+<link rel="icon" href="data:,">
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--accent:#00e5ff;--trace:#1a5f6e;--text:#e6edf3;--dim:#7d8590}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:ui-monospace,"Cascadia Code",Consolas,Menlo,monospace;
+  display:flex;flex-direction:column;align-items:center;
+  min-height:100vh;padding:40px 20px 24px;
+}
+.wrap{width:100%;max-width:1000px}
+.bar{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.sq{width:8px;height:8px;background:var(--accent);flex:none}
+.sq.hollow{background:none;border:1.2px solid var(--accent)}
+.bar h1{font-size:16px;font-weight:600;letter-spacing:4px;white-space:nowrap}
+.rule{flex:1;height:1px;background:var(--trace);opacity:.7}
+.meta{display:flex;flex-wrap:wrap;gap:14px 40px;margin-bottom:26px}
+.meta span{display:flex;flex-direction:column;gap:6px;font-size:11px;letter-spacing:2px;color:var(--dim)}
+.meta b{color:var(--text);font-weight:600;font-size:20px;letter-spacing:1px}
+#stage{width:100%}
+#stage svg{width:100%;height:auto;display:block}
+g.day{cursor:pointer;opacity:0;animation:pop .3s forwards}
+g.day:hover{filter:brightness(1.45)}
+@keyframes pop{to{opacity:1}}
+@media (prefers-reduced-motion:reduce){g.day{animation:none;opacity:1}}
+#tip{
+  position:fixed;pointer-events:none;z-index:10;display:none;
+  background:var(--panel);border:1px solid var(--trace);
+  padding:7px 10px;font-size:11px;letter-spacing:.5px;white-space:nowrap;
+}
+#tip b{color:var(--accent)}
+.foot{display:flex;align-items:center;gap:28px;margin-top:16px;font-size:11px;letter-spacing:1px;color:var(--dim);flex-wrap:wrap}
+.legend{display:flex;align-items:center;gap:5px}
+.legend i{width:9px;height:9px;display:inline-block}
+.foot a{color:var(--accent);text-decoration:none}
+.foot a:hover{text-decoration:underline}
+#status{font-size:11px;letter-spacing:2px;color:var(--dim);padding:60px 0;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar"><span class="sq"></span><h1>ADITYA SHARMA — CONTRIBUTIONS</h1><span class="rule"></span><span class="sq hollow"></span></div>
+  <div class="meta" id="meta" hidden>
+    <span>TOTAL <b id="m-total"></b></span>
+    <span>BEST DAY <b id="m-best"></b></span>
+    <span>WINDOW <b id="m-window"></b></span>
+  </div>
+  <div id="status">LOADING CONTRIBUTION DATA…</div>
+  <div id="stage"></div>
+  <div class="foot" id="foot" hidden>
+    <span>HOVER A TOWER FOR ITS EXACT COUNT</span>
+    <span class="legend" id="legend"></span>
+    <a href="https://github.com/Adityasharma0101911">← github.com/Adityasharma0101911</a>
+  </div>
+</div>
+<div id="tip"></div>
+<script>
+const USER = "Adityasharma0101911";
+const TOPS = ["#1c232e", "#0a4652", "#0c6b7c", "#00aac0", "#00e5ff"]; // level 0-4, matches profile accent ramp
+const S = 14, AX = Math.cos(Math.PI / 6) * S, AY = S / 2, MAXH = 150;
+
+const shade = (hex, f) => {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = k => Math.round(((n >> k) & 255) * f);
+  return `rgb(${ch(16)},${ch(8)},${ch(0)})`;
+};
+
+function draw(days) {
+  const offset = new Date(days[0].date + "T00:00:00Z").getUTCDay();
+  const cells = days.map((c, i) => ({ ...c, w: (i + offset) / 7 | 0, d: (i + offset) % 7 }));
+  const maxCount = Math.max(...cells.map(c => c.count), 1);
+  const weeks = cells[cells.length - 1].w + 1;
+  const height = c => c.count ? 6 + (MAXH - 6) * Math.log10(c.count + 1) / Math.log10(maxCount + 1) : 2;
+
+  cells.sort((a, b) => (a.w + a.d) - (b.w + b.d)); // painter's order, back to front
+  let minYr = 0;
+  const P = pts => pts.map(p => p[0].toFixed(2) + "," + p[1].toFixed(2)).join(" ");
+  const poly = (pts, fill) => `<polygon points="${P(pts)}" fill="${fill}"/>`;
+  const out = cells.map(c => {
+    const cx = (c.w - c.d) * AX, gy = (c.w + c.d) * AY;
+    const h = height(c), ty = gy - h, top = TOPS[c.level];
+    minYr = Math.min(minYr, ty - AY);
+    const N = [cx, ty - AY], E = [cx + AX, ty], So = [cx, ty + AY], W = [cx - AX, ty];
+    return `<g class="day" data-date="${c.date}" data-count="${c.count}" style="animation-delay:${(c.w + c.d) * 9}ms">`
+      + poly([W, So, [So[0], So[1] + h], [W[0], W[1] + h]], shade(top, .40))
+      + poly([So, E, [E[0], E[1] + h], [So[0], So[1] + h]], shade(top, .62))
+      + poly([N, E, So, W], top)
+      + `</g>`;
+  });
+
+  const minX = -6 * AX - AX, maxX = (weeks - 1) * AX + AX;
+  const maxY = (weeks - 1 + 6) * AY + AY, pad = 10;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox",
+    `${(minX - pad).toFixed(1)} ${(minYr - pad).toFixed(1)} ${(maxX - minX + 2 * pad).toFixed(1)} ${(maxY - minYr + 2 * pad).toFixed(1)}`);
+  svg.innerHTML = out.join("");
+  document.getElementById("stage").append(svg);
+}
+
+const tip = document.getElementById("tip");
+const fmt = (date, opt) => new Date(date + "T00:00:00Z")
+  .toLocaleDateString("en-US", { timeZone: "UTC", ...opt });
+
+document.getElementById("stage").addEventListener("mousemove", e => {
+  const g = e.target.closest("g.day");
+  if (!g) { tip.style.display = "none"; return; }
+  const n = +g.dataset.count;
+  tip.innerHTML = `<b>${n}</b> contribution${n === 1 ? "" : "s"} · ` +
+    fmt(g.dataset.date, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+  tip.style.display = "block";
+  tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 6) + "px";
+  tip.style.top = Math.min(e.clientY + 14, innerHeight - tip.offsetHeight - 6) + "px";
+});
+document.getElementById("stage").addEventListener("mouseleave", () => tip.style.display = "none");
+
+(async () => {
+  const status = document.getElementById("status");
+  try {
+    const r = await fetch(`https://github-contributions-api.jogruber.de/v4/${USER}?y=last`);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json();
+    const days = j.contributions;
+    const total = (j.total && j.total.lastYear) || days.reduce((a, c) => a + c.count, 0);
+    const best = days.reduce((a, c) => c.count > a.count ? c : a);
+    status.remove();
+    draw(days);
+    document.getElementById("m-total").textContent = total.toLocaleString("en-US");
+    document.getElementById("m-best").textContent =
+      best.count + " · " + fmt(best.date, { month: "short", day: "numeric" });
+    document.getElementById("m-window").textContent =
+      days[0].date + " → " + days[days.length - 1].date;
+    document.getElementById("legend").innerHTML =
+      "LESS " + TOPS.map(c => `<i style="background:${c}"></i>`).join("") + " MORE";
+    document.getElementById("meta").hidden = false;
+    document.getElementById("foot").hidden = false;
+  } catch (err) {
+    status.textContent = "COULD NOT LOAD CONTRIBUTION DATA — " + err.message;
+  }
+})();
+</script>
+</body>
+</html>

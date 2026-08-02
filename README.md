@@ -120,8 +120,11 @@ Tauri · Electron · Qt · Windhawk · Win32 · WebView2 · wgpu
 PostgreSQL · Redis · Supabase · SQLite · Docker · Vercel
 ```
 
+<a href="https://adityasharma0101911.github.io/Adityasharma0101911/">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./profile-3d-contrib/night.svg">
   <source media="(prefers-color-scheme: light)" srcset="./profile-3d-contrib/day.svg">
   <img alt="3D contribution calendar" src="./profile-3d-contrib/night.svg" width="100%">
 </picture>
+</a>
+<p align="center"><sub>click the calendar for the <a href="https://adityasharma0101911.github.io/Adityasharma0101911/">interactive 3D version</a> — hover any tower for its exact count</sub></p>
