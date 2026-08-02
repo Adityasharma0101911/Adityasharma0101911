@@ -670,7 +670,9 @@ if __name__ == "__main__":
     assert left > 390, f"cube left {left:.0f} hits the name column"
     assert right < 756, f"cube right {right:.0f} hits the wave field"
 
-    output_path = "/mnt/user-data/outputs/assets/hero.svg"
+    import os
+
+    output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hero.svg")
     with open(output_path, "w", encoding="utf-8") as handle:
         handle.write(build_svg())
     print(f"cube screen bounds: x {left:.0f}..{right:.0f}, y {top:.0f}..{bottom:.0f}")
