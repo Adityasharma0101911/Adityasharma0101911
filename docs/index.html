@@ -3,146 +3,466 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>3D Contributions · Aditya Sharma</title>
+<meta name="description" content="Live GitHub telemetry for Aditya Sharma — 3D contribution terrain, languages, rhythm, and activity.">
+<title>Aditya Sharma — GitHub Telemetry</title>
 <link rel="icon" href="data:,">
 <style>
-:root{--bg:#0d1117;--panel:#161b22;--accent:#00e5ff;--trace:#1a5f6e;--text:#e6edf3;--dim:#7d8590}
-*{box-sizing:border-box;margin:0;padding:0}
-body{
-  background:var(--bg);color:var(--text);
-  font-family:ui-monospace,"Cascadia Code",Consolas,Menlo,monospace;
-  display:flex;flex-direction:column;align-items:center;
-  min-height:100vh;padding:40px 20px 24px;
+:root{
+  --bg:#0a0e14; --surface:#0d1117; --line:#12242c; --trace:#1a5f6e;
+  --accent:#00e5ff; --ink:#e6edf3; --dim:#7d8590; --weak:#5f7c86;
 }
-.wrap{width:100%;max-width:1000px}
-.bar{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scrollbar-color:var(--trace) var(--bg)}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:ui-monospace,"Cascadia Code",Consolas,Menlo,monospace;
+  font-size:12px; letter-spacing:.4px; line-height:1.5;
+  min-height:100vh; overflow-x:hidden;
+}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+a:focus-visible{outline:1px solid var(--accent);outline-offset:2px}
+
+/* ambient layers */
+.grid-bg{
+  position:fixed; inset:-30%; z-index:-2; pointer-events:none;
+  background-image:
+    repeating-linear-gradient(60deg,  rgba(0,229,255,.045) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(-60deg, rgba(0,229,255,.045) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(0deg,   rgba(0,229,255,.028) 0 1px, transparent 1px 66px);
+  animation:drift 70s ease-in-out infinite alternate;
+}
+@keyframes drift{to{transform:translate(-120px,-70px)}}
+.sweep{
+  position:fixed; left:0; right:0; top:-3px; height:2px; z-index:-1; pointer-events:none;
+  background:linear-gradient(90deg, transparent 5%, rgba(0,229,255,.28), transparent 95%);
+  box-shadow:0 0 14px rgba(0,229,255,.25);
+  animation:sweep 10s linear infinite 2.5s;
+}
+@keyframes sweep{0%{top:-3px;opacity:0}6%{opacity:1}90%{opacity:1}100%{top:102vh;opacity:0}}
+body::after{ /* CRT scanlines */
+  content:""; position:fixed; inset:0; z-index:50; pointer-events:none;
+  background:repeating-linear-gradient(0deg, rgba(255,255,255,.013) 0 1px, transparent 1px 3px);
+}
+
+/* status bar */
+.status{
+  display:flex; align-items:center; gap:12px;
+  max-width:1160px; margin:0 auto; padding:18px 20px 0;
+  color:var(--dim); white-space:nowrap;
+}
 .sq{width:8px;height:8px;background:var(--accent);flex:none}
 .sq.hollow{background:none;border:1.2px solid var(--accent)}
-.bar h1{font-size:16px;font-weight:600;letter-spacing:4px;white-space:nowrap}
-.rule{flex:1;height:1px;background:var(--trace);opacity:.7}
-.meta{display:flex;flex-wrap:wrap;gap:14px 40px;margin-bottom:26px}
-.meta span{display:flex;flex-direction:column;gap:6px;font-size:11px;letter-spacing:2px;color:var(--dim)}
-.meta b{color:var(--text);font-weight:600;font-size:20px;letter-spacing:1px}
-#stage{width:100%}
+.rule{flex:1;height:1px;background:var(--trace);opacity:.7;min-width:20px}
+.status .sid{color:var(--ink);letter-spacing:2px}
+.status .boot{overflow:hidden;text-overflow:ellipsis}
+.cursor{width:7px;height:13px;background:var(--accent);flex:none;animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+
+.wrap{max-width:1160px;margin:0 auto;padding:26px 20px 40px;display:grid;gap:14px}
+
+/* hero wordmark */
+.hero{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;margin:6px 0 8px}
+.hero .tag{color:var(--weak);letter-spacing:2px;padding-bottom:4px}
+
+/* panels */
+.panel{
+  position:relative; background:rgba(13,17,23,.92);
+  border:1px solid var(--line); padding:18px 20px 20px;
+}
+.panel::before{
+  content:""; position:absolute; top:-1px; left:-1px; width:14px; height:14px;
+  border-top:2px solid var(--accent); border-left:2px solid var(--accent);
+}
+.panel::after{
+  content:""; position:absolute; bottom:-1px; right:-1px; width:14px; height:14px;
+  border-bottom:2px solid var(--trace); border-right:2px solid var(--trace);
+}
+.ptitle{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.ptitle svg{display:block;flex:none}
+
+/* reveal choreography */
+.hero,.panel,.tile{opacity:0;transform:translateY(10px);animation:reveal .55s cubic-bezier(.2,.7,.3,1) forwards;animation-delay:calc(var(--i,0)*90ms + 120ms)}
+@keyframes reveal{to{opacity:1;transform:none}}
+
+/* calendar */
 #stage svg{width:100%;height:auto;display:block}
 g.day{cursor:pointer;opacity:0;animation:pop .3s forwards}
 g.day:hover{filter:brightness(1.45)}
 @keyframes pop{to{opacity:1}}
-@media (prefers-reduced-motion:reduce){g.day{animation:none;opacity:1}}
+.calnote{margin-top:10px;color:var(--weak);letter-spacing:1px}
+
+/* stat tiles */
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.tile{
+  background:rgba(13,17,23,.92); border:1px solid var(--line);
+  padding:16px 18px 14px; position:relative;
+}
+.tile::before{content:"";position:absolute;top:-1px;left:-1px;width:10px;height:10px;border-top:2px solid var(--trace);border-left:2px solid var(--trace)}
+.tile em{display:block;font-style:normal;font-size:32px;line-height:1.15;color:var(--accent);font-weight:600;letter-spacing:0}
+.tile span{color:var(--dim);letter-spacing:2px}
+.tile .sub{color:var(--weak);letter-spacing:1px;display:block;margin-top:2px}
+
+/* columns */
+.cols{display:grid;grid-template-columns:3fr 2fr;gap:14px;align-items:stretch}
+
+/* languages */
+.langbar{display:flex;gap:2px;height:16px;border-radius:3px;overflow:hidden;margin:6px 0 14px}
+.langbar i{min-width:2px;transition:filter .15s}
+.langbar i:hover{filter:brightness(1.3)}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}
+.legend .li{display:flex;align-items:center;gap:8px;color:var(--dim)}
+.legend .li i{width:9px;height:9px;flex:none}
+.legend .li b{margin-left:auto;color:var(--ink);font-weight:600}
+.src{margin-top:14px;color:var(--weak);letter-spacing:1px}
+
+/* rhythm */
+.rhythm{display:flex;gap:10px;align-items:flex-end;height:150px;padding-top:18px}
+.rcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;cursor:default}
+.rbar{width:100%;background:#0e6b7c;border-radius:3px 3px 0 0;min-height:2px;transition:background .15s}
+.rcol:hover .rbar{background:#00b8cc}
+.rcol.peak .rbar{background:var(--accent)}
+.rcol b{color:var(--accent);font-weight:600;height:14px}
+.rcol span{color:var(--weak)}
+
+/* activity log */
+.log{display:grid;gap:7px}
+.log .ln{display:flex;gap:10px;align-items:baseline;opacity:0;animation:reveal .4s forwards;animation-delay:calc(var(--i)*70ms + .2s)}
+.log .lv{color:var(--accent);flex:none;width:56px}
+.log .ld{color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.log .lt{margin-left:auto;color:var(--weak);flex:none}
+.log .pfx{color:var(--trace);flex:none}
+
+.err{color:var(--weak);letter-spacing:1px}
+footer{display:flex;align-items:center;gap:24px;flex-wrap:wrap;color:var(--weak);letter-spacing:1px;padding-top:4px}
+.lramp{display:flex;align-items:center;gap:4px}
+.lramp i{width:9px;height:9px;display:inline-block}
+
 #tip{
-  position:fixed;pointer-events:none;z-index:10;display:none;
-  background:var(--panel);border:1px solid var(--trace);
-  padding:7px 10px;font-size:11px;letter-spacing:.5px;white-space:nowrap;
+  position:fixed;pointer-events:none;z-index:100;display:none;
+  background:var(--surface);border:1px solid var(--trace);
+  padding:7px 10px;white-space:nowrap;box-shadow:0 4px 18px rgba(0,0,0,.5);
 }
 #tip b{color:var(--accent)}
-.foot{display:flex;align-items:center;gap:28px;margin-top:16px;font-size:11px;letter-spacing:1px;color:var(--dim);flex-wrap:wrap}
-.legend{display:flex;align-items:center;gap:5px}
-.legend i{width:9px;height:9px;display:inline-block}
-.foot a{color:var(--accent);text-decoration:none}
-.foot a:hover{text-decoration:underline}
-#status{font-size:11px;letter-spacing:2px;color:var(--dim);padding:60px 0;text-align:center}
+
+@media (max-width:900px){
+  .cols{grid-template-columns:1fr}
+  .tiles{grid-template-columns:1fr 1fr}
+  .status .boot{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;animation-delay:0ms!important;animation-iteration-count:1!important}
+  .sweep,.grid-bg{animation:none!important;display:none}
+}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="bar"><span class="sq"></span><h1>ADITYA SHARMA — CONTRIBUTIONS</h1><span class="rule"></span><span class="sq hollow"></span></div>
-  <div class="meta" id="meta" hidden>
-    <span>TOTAL <b id="m-total"></b></span>
-    <span>BEST DAY <b id="m-best"></b></span>
-    <span>WINDOW <b id="m-window"></b></span>
-  </div>
-  <div id="status">LOADING CONTRIBUTION DATA…</div>
-  <div id="stage"></div>
-  <div class="foot" id="foot" hidden>
-    <span>HOVER A TOWER FOR ITS EXACT COUNT</span>
-    <span class="legend" id="legend"></span>
-    <a href="https://github.com/Adityasharma0101911">← github.com/Adityasharma0101911</a>
-  </div>
-</div>
-<div id="tip"></div>
-<script>
-const USER = "Adityasharma0101911";
-const TOPS = ["#1c232e", "#0a4652", "#0c6b7c", "#00aac0", "#00e5ff"]; // level 0-4, matches profile accent ramp
-const S = 14, AX = Math.cos(Math.PI / 6) * S, AY = S / 2, MAXH = 150;
+<div class="grid-bg" aria-hidden="true"></div>
+<div class="sweep" aria-hidden="true"></div>
 
+<header class="status">
+  <span class="sq"></span>
+  <span class="sid">ADITYASHARMA0101911</span>
+  <span class="boot" id="boot"></span>
+  <span class="rule"></span>
+  <span id="clock">--:--:-- UTC</span>
+  <span class="cursor" aria-hidden="true"></span>
+</header>
+
+<main class="wrap">
+  <div class="hero" style="--i:0">
+    <div id="wordmark" role="img" aria-label="Aditya Sharma"></div>
+    <p class="tag">GITHUB TELEMETRY · LIVE</p>
+  </div>
+
+  <section class="panel" style="--i:1" aria-label="Contribution calendar">
+    <div class="ptitle"><span class="sq"></span><span data-pixel="CONTRIBUTIONS"></span><span class="rule"></span><span class="sq hollow"></span></div>
+    <div id="stage"><div class="err" id="cal-status">// fetching contribution data…</div></div>
+    <div class="calnote" id="cal-note"></div>
+  </section>
+
+  <div class="tiles" role="list" aria-label="Contribution stats">
+    <div class="tile" role="listitem" style="--i:2"><em id="t-total">0</em><span>TOTAL · 1 YEAR</span><span class="sub" id="t-total-sub">&nbsp;</span></div>
+    <div class="tile" role="listitem" style="--i:3"><em id="t-best">0</em><span>BEST DAY</span><span class="sub" id="t-best-sub">&nbsp;</span></div>
+    <div class="tile" role="listitem" style="--i:4"><em id="t-cur">0</em><span>CURRENT STREAK</span><span class="sub">CONSECUTIVE DAYS</span></div>
+    <div class="tile" role="listitem" style="--i:5"><em id="t-long">0</em><span>LONGEST STREAK</span><span class="sub">CONSECUTIVE DAYS</span></div>
+  </div>
+
+  <div class="cols">
+    <section class="panel" style="--i:6" aria-label="Languages">
+      <div class="ptitle"><span class="sq"></span><span data-pixel="LANGUAGES"></span><span class="rule"></span><span class="sq hollow"></span></div>
+      <div id="langs"><div class="err">// scanning repositories…</div></div>
+      <div class="src" id="lang-src"></div>
+    </section>
+    <section class="panel" style="--i:7" aria-label="Weekly rhythm">
+      <div class="ptitle"><span class="sq"></span><span data-pixel="RHYTHM"></span><span class="rule"></span><span class="sq hollow"></span></div>
+      <div id="rhythm"><div class="err">// awaiting calendar data…</div></div>
+    </section>
+  </div>
+
+  <section class="panel" style="--i:8" aria-label="Recent public activity">
+    <div class="ptitle"><span class="sq"></span><span data-pixel="ACTIVITY"></span><span class="rule"></span><span class="sq hollow"></span></div>
+    <div class="log" id="log"><div class="err">// reading event stream…</div></div>
+  </section>
+
+  <footer style="--i:9">
+    <span class="lramp" id="lramp">LESS</span>
+    <span>TOWERS INCLUDE PRIVATE CONTRIBUTIONS</span>
+    <a href="https://github.com/Adityasharma0101911">← github.com/Adityasharma0101911</a>
+  </footer>
+</main>
+
+<div id="tip" role="status"></div>
+
+<script>
+"use strict";
+const USER = "Adityasharma0101911";
+const RAMP = ["#132f36","#175160","#1a7488","#00b8cc","#00e5ff"]; // night.svg contribColors
+const $ = id => document.getElementById(id);
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---- 8x8 arcade font, same glyph data as assets/gen_headers.py ---- */
+const PIXEL_FONT = {
+  A:[0x30,0x78,0xCC,0xCC,0xFC,0xCC,0xCC], B:[0xFC,0x66,0x66,0x7C,0x66,0x66,0xFC],
+  C:[0x3C,0x66,0xC0,0xC0,0xC0,0x66,0x3C], D:[0xF8,0x6C,0x66,0x66,0x66,0x6C,0xF8],
+  E:[0xFE,0x62,0x68,0x78,0x68,0x62,0xFE], F:[0xFE,0x62,0x68,0x78,0x68,0x60,0xF0],
+  G:[0x3C,0x66,0xC0,0xC0,0xCE,0x66,0x3E], H:[0xCC,0xCC,0xCC,0xFC,0xCC,0xCC,0xCC],
+  I:[0x78,0x30,0x30,0x30,0x30,0x30,0x78], K:[0xE6,0x66,0x6C,0x78,0x6C,0x66,0xE6],
+  L:[0xF0,0x60,0x60,0x60,0x62,0x66,0xFE], M:[0xC6,0xEE,0xFE,0xFE,0xD6,0xC6,0xC6],
+  N:[0xC6,0xE6,0xF6,0xDE,0xCE,0xC6,0xC6], O:[0x38,0x6C,0xC6,0xC6,0xC6,0x6C,0x38],
+  R:[0xFC,0x66,0x66,0x7C,0x6C,0x66,0xE6], S:[0x78,0xCC,0xE0,0x70,0x1C,0xCC,0x78],
+  T:[0xFC,0xB4,0x30,0x30,0x30,0x30,0x78], U:[0xCC,0xCC,0xCC,0xCC,0xCC,0xCC,0x78],
+  V:[0xCC,0xCC,0xCC,0xCC,0xCC,0x78,0x30], W:[0xC6,0xC6,0xC6,0xD6,0xFE,0xEE,0xC6],
+  Y:[0xCC,0xCC,0xCC,0x78,0x30,0x30,0x78],
+};
+function pixelText(text, cell, color) {
+  const adv = cell * 9;
+  let x = 0, rects = "";
+  for (const ch of text) {
+    if (ch === " ") { x += cell * 6; continue; }
+    const rows = PIXEL_FONT[ch] || [];
+    rows.forEach((bits, r) => {
+      let col = 0;
+      while (col < 8) {
+        if (bits & (0x80 >> col)) {
+          const start = col;
+          while (col < 8 && bits & (0x80 >> col)) col++;
+          rects += `<rect x="${x + start * cell}" y="${r * cell}" width="${(col - start) * cell}" height="${cell}" fill="${color}"/>`;
+        } else col++;
+      }
+    });
+    x += adv;
+  }
+  const w = x - adv + 8 * cell, h = 7 * cell;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true">${rects}</svg>`;
+}
+document.querySelectorAll("[data-pixel]").forEach(el => { el.innerHTML = pixelText(el.dataset.pixel, 3, "#e6edf3"); });
+$("wordmark").innerHTML = pixelText("ADITYA SHARMA", 5, "#e6edf3");
+$("lramp").innerHTML = "LESS " + RAMP.map(c => `<i style="background:${c}"></i>`).join("") + " MORE";
+
+/* ---- boot line + clock ---- */
+const BOOT = ":: TELEMETRY LINK ESTABLISHED — STREAMING LIVE FROM GITHUB";
+if (REDUCED) $("boot").textContent = BOOT;
+else { let i = 0; const t = setInterval(() => { $("boot").textContent = BOOT.slice(0, ++i); if (i >= BOOT.length) clearInterval(t); }, 22); }
+const tick = () => { $("clock").textContent = new Date().toISOString().slice(11, 19) + " UTC"; };
+tick(); setInterval(tick, 1000);
+
+/* ---- fetch helper with a 30 min session cache (github unauth = 60 req/hr) ---- */
+async function cached(url) {
+  const k = "ghd:" + url;
+  try { const c = JSON.parse(sessionStorage[k]); if (Date.now() - c.t < 18e5) return c.v; } catch {}
+  const r = await fetch(url, url.includes("api.github.com") ? { headers: { accept: "application/vnd.github+json" } } : undefined);
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  const v = await r.json();
+  try { sessionStorage[k] = JSON.stringify({ t: Date.now(), v }); } catch {}
+  return v;
+}
+
+/* ---- shared tooltip ---- */
+const tip = $("tip");
+document.addEventListener("mousemove", e => {
+  const t = e.target.closest ? e.target.closest("[data-tip], g.day") : null;
+  if (!t) { tip.style.display = "none"; return; }
+  if (t.dataset.tip) tip.innerHTML = t.dataset.tip;
+  else {
+    const n = +t.dataset.count;
+    tip.innerHTML = `<b>${n}</b> contribution${n === 1 ? "" : "s"} · ` + fmtDate(t.dataset.date, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+  }
+  tip.style.display = "block";
+  tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 6) + "px";
+  tip.style.top = Math.min(e.clientY + 14, innerHeight - tip.offsetHeight - 6) + "px";
+});
+const fmtDate = (d, opt) => new Date(d + "T00:00:00Z").toLocaleDateString("en-US", { timeZone: "UTC", ...opt });
+
+/* ---- count-up ---- */
+function countUp(el, target) {
+  if (REDUCED || target === 0) { el.textContent = target.toLocaleString("en-US"); return; }
+  const t0 = performance.now(), D = 900;
+  (function step(t) {
+    const p = Math.min(1, (t - t0) / D), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(target * e).toLocaleString("en-US");
+    if (p < 1) requestAnimationFrame(step);
+  })(t0);
+}
+
+/* ---- 3D contribution terrain ---- */
+const S = 14, AX = Math.cos(Math.PI / 6) * S, AY = S / 2, MAXH = 150;
 const shade = (hex, f) => {
   const n = parseInt(hex.slice(1), 16);
   const ch = k => Math.round(((n >> k) & 255) * f);
   return `rgb(${ch(16)},${ch(8)},${ch(0)})`;
 };
-
-function draw(days) {
+function drawCalendar(days) {
   const offset = new Date(days[0].date + "T00:00:00Z").getUTCDay();
   const cells = days.map((c, i) => ({ ...c, w: (i + offset) / 7 | 0, d: (i + offset) % 7 }));
   const maxCount = Math.max(...cells.map(c => c.count), 1);
   const weeks = cells[cells.length - 1].w + 1;
   const height = c => c.count ? 6 + (MAXH - 6) * Math.log10(c.count + 1) / Math.log10(maxCount + 1) : 2;
-
   cells.sort((a, b) => (a.w + a.d) - (b.w + b.d)); // painter's order, back to front
   let minYr = 0;
   const P = pts => pts.map(p => p[0].toFixed(2) + "," + p[1].toFixed(2)).join(" ");
   const poly = (pts, fill) => `<polygon points="${P(pts)}" fill="${fill}"/>`;
   const out = cells.map(c => {
     const cx = (c.w - c.d) * AX, gy = (c.w + c.d) * AY;
-    const h = height(c), ty = gy - h, top = TOPS[c.level];
+    const h = height(c), ty = gy - h, top = c.count ? RAMP[c.level] : "#151b24";
     minYr = Math.min(minYr, ty - AY);
     const N = [cx, ty - AY], E = [cx + AX, ty], So = [cx, ty + AY], W = [cx - AX, ty];
     return `<g class="day" data-date="${c.date}" data-count="${c.count}" style="animation-delay:${(c.w + c.d) * 9}ms">`
       + poly([W, So, [So[0], So[1] + h], [W[0], W[1] + h]], shade(top, .40))
       + poly([So, E, [E[0], E[1] + h], [So[0], So[1] + h]], shade(top, .62))
-      + poly([N, E, So, W], top)
-      + `</g>`;
+      + poly([N, E, So, W], top) + "</g>";
   });
-
   const minX = -6 * AX - AX, maxX = (weeks - 1) * AX + AX;
   const maxY = (weeks - 1 + 6) * AY + AY, pad = 10;
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("viewBox",
-    `${(minX - pad).toFixed(1)} ${(minYr - pad).toFixed(1)} ${(maxX - minX + 2 * pad).toFixed(1)} ${(maxY - minYr + 2 * pad).toFixed(1)}`);
+  svg.setAttribute("viewBox", `${(minX - pad).toFixed(1)} ${(minYr - pad).toFixed(1)} ${(maxX - minX + 2 * pad).toFixed(1)} ${(maxY - minYr + 2 * pad).toFixed(1)}`);
   svg.innerHTML = out.join("");
-  document.getElementById("stage").append(svg);
+  $("stage").replaceChildren(svg);
 }
 
-const tip = document.getElementById("tip");
-const fmt = (date, opt) => new Date(date + "T00:00:00Z")
-  .toLocaleDateString("en-US", { timeZone: "UTC", ...opt });
-
-document.getElementById("stage").addEventListener("mousemove", e => {
-  const g = e.target.closest("g.day");
-  if (!g) { tip.style.display = "none"; return; }
-  const n = +g.dataset.count;
-  tip.innerHTML = `<b>${n}</b> contribution${n === 1 ? "" : "s"} · ` +
-    fmt(g.dataset.date, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
-  tip.style.display = "block";
-  tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 6) + "px";
-  tip.style.top = Math.min(e.clientY + 14, innerHeight - tip.offsetHeight - 6) + "px";
-});
-document.getElementById("stage").addEventListener("mouseleave", () => tip.style.display = "none");
-
-(async () => {
-  const status = document.getElementById("status");
+/* ---- panels ---- */
+async function calendarPanel() {
   try {
-    const r = await fetch(`https://github-contributions-api.jogruber.de/v4/${USER}?y=last`);
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    const j = await r.json();
+    const j = await cached(`https://github-contributions-api.jogruber.de/v4/${USER}?y=last`);
     const days = j.contributions;
+    drawCalendar(days);
+    $("cal-note").textContent = days[0].date + " → " + days[days.length - 1].date + " · HOVER A TOWER FOR ITS EXACT COUNT";
+
     const total = (j.total && j.total.lastYear) || days.reduce((a, c) => a + c.count, 0);
     const best = days.reduce((a, c) => c.count > a.count ? c : a);
-    status.remove();
-    draw(days);
-    document.getElementById("m-total").textContent = total.toLocaleString("en-US");
-    document.getElementById("m-best").textContent =
-      best.count + " · " + fmt(best.date, { month: "short", day: "numeric" });
-    document.getElementById("m-window").textContent =
-      days[0].date + " → " + days[days.length - 1].date;
-    document.getElementById("legend").innerHTML =
-      "LESS " + TOPS.map(c => `<i style="background:${c}"></i>`).join("") + " MORE";
-    document.getElementById("meta").hidden = false;
-    document.getElementById("foot").hidden = false;
-  } catch (err) {
-    status.textContent = "COULD NOT LOAD CONTRIBUTION DATA — " + err.message;
+    let longest = 0, run = 0, cur = 0;
+    for (const d of days) { run = d.count ? run + 1 : 0; if (run > longest) longest = run; }
+    let i = days.length - 1;
+    if (days[i].count === 0) i--; // today may have no activity yet
+    for (; i >= 0 && days[i].count > 0; i--) cur++;
+    countUp($("t-total"), total);
+    countUp($("t-best"), best.count);
+    countUp($("t-cur"), cur);
+    countUp($("t-long"), longest);
+    $("t-total-sub").textContent = "INCL. PRIVATE";
+    $("t-best-sub").textContent = fmtDate(best.date, { month: "short", day: "numeric", year: "numeric" }).toUpperCase();
+
+    rhythmPanel(days);
+  } catch (e) {
+    $("cal-status").textContent = "// contribution data unavailable — " + e.message + " · retry in a minute";
+    $("rhythm").innerHTML = '<div class="err">// awaiting calendar data</div>';
   }
-})();
+}
+
+function rhythmPanel(days) {
+  const names = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+  const sums = [0, 0, 0, 0, 0, 0, 0];
+  for (const d of days) sums[new Date(d.date + "T00:00:00Z").getUTCDay()] += d.count;
+  const max = Math.max(...sums, 1), peak = sums.indexOf(max);
+  $("rhythm").innerHTML = '<div class="rhythm">' + sums.map((v, i) =>
+    `<div class="rcol${i === peak ? " peak" : ""}" data-tip="${names[i]} · <b>${v.toLocaleString("en-US")}</b> contributions">`
+    + `<b>${i === peak ? v.toLocaleString("en-US") : ""}</b>`
+    + `<div class="rbar" style="height:${(v / max * 100).toFixed(1)}%"></div>`
+    + `<span>${names[i][0]}</span></div>`).join("") + "</div>";
+}
+
+const LANG_COLORS = { /* palette validated for CVD separation on the dark surface */
+  TypeScript:"#4f8ff7", JavaScript:"#f1e05a", Python:"#4584b6", Rust:"#e8a87c",
+  "C++":"#f34b7d", "C#":"#2ea043", C:"#96a7c4", HTML:"#ff7b54", CSS:"#c084fc",
+  SCSS:"#e36ba4", Java:"#d29343", Lua:"#8586e8", Luau:"#8586e8", Shell:"#7ee787",
+  PowerShell:"#5391fe", Batchfile:"#9aa7b0", CMake:"#9aa7b0", Makefile:"#9aa7b0",
+  Dockerfile:"#4a97c9", GLSL:"#66b2cc", WGSL:"#66b2cc", Svelte:"#ff5c33",
+  Vue:"#41b883", Go:"#29b6d8", Kotlin:"#b07bf5", Swift:"#f05138", Ruby:"#ea5f7a",
+  Dart:"#40c4ff", "Jupyter Notebook":"#da8b45",
+};
+const OTHER = "#6e7681";
+const fmtBytes = v => v >= 1e6 ? (v / 1e6).toFixed(1) + " MB" : Math.max(1, Math.round(v / 1e3)) + " KB";
+
+async function languagesPanel() {
+  let agg = null, src = "";
+  try { // nightly export from the profile workflow — covers private repos once a PAT secret exists
+    const j = await cached("langs.json");
+    if (j.languages && Object.keys(j.languages).length) { agg = j.languages; src = "ALL REPOS · BYTES · UPDATED NIGHTLY"; }
+  } catch {}
+  try {
+    if (!agg) { // fallback: aggregate public repos live
+      const repos = (await cached(`https://api.github.com/users/${USER}/repos?per_page=100&type=owner&sort=pushed`)).filter(r => !r.fork);
+      const lists = await Promise.all(repos.slice(0, 12).map(r => cached(`https://api.github.com/repos/${USER}/${r.name}/languages`).catch(() => ({}))));
+      agg = {};
+      for (const l of lists) for (const [k, v] of Object.entries(l)) agg[k] = (agg[k] || 0) + v;
+      src = "PUBLIC REPOS · BYTES · LIVE";
+    }
+    const total = Object.values(agg).reduce((a, b) => a + b, 0);
+    if (!total) throw new Error("no data");
+    let entries = Object.entries(agg).sort((a, b) => b[1] - a[1]);
+    const main = entries.filter(([, v], i) => i < 7 && v / total >= .005);
+    const rest = entries.slice(main.length).reduce((a, [, v]) => a + v, 0);
+    if (rest) main.push(["OTHER", rest]);
+    const seg = ([k, v]) => {
+      const pct = v / total * 100, c = k === "OTHER" ? OTHER : (LANG_COLORS[k] || OTHER);
+      return { k, v, pct, c };
+    };
+    const rows = main.map(seg);
+    $("langs").innerHTML =
+      '<div class="langbar" role="img" aria-label="Language share">' +
+      rows.map(r => `<i style="flex:${r.pct.toFixed(2)} 0 0;background:${r.c}" data-tip="${esc(r.k)} · <b>${r.pct.toFixed(1)}%</b> · ${fmtBytes(r.v)}"></i>`).join("") +
+      '</div><div class="legend">' +
+      rows.map(r => `<span class="li"><i style="background:${r.c}"></i>${esc(r.k)}<b>${r.pct.toFixed(1)}%</b></span>`).join("") +
+      "</div>";
+    $("lang-src").textContent = src;
+  } catch (e) {
+    $("langs").innerHTML = `<div class="err">// language data unavailable — ${esc(e.message)} (github api rate limit resets hourly)</div>`;
+  }
+}
+
+const AGO = [[31536e6, "y"], [2592e6, "mo"], [864e5, "d"], [36e5, "h"], [6e4, "m"]];
+const ago = iso => { const d = Date.now() - new Date(iso); for (const [ms, u] of AGO) if (d >= ms) return Math.floor(d / ms) + u; return "now"; };
+
+async function activityPanel() {
+  try {
+    const ev = await cached(`https://api.github.com/users/${USER}/events/public?per_page=30`);
+    const lines = [];
+    for (const e of ev) {
+      if (lines.length >= 9) break;
+      const repo = e.repo.name.replace(USER + "/", "");
+      const url = "https://github.com/" + e.repo.name;
+      let verb = "", detail = "";
+      if (e.type === "PushEvent") { verb = "push"; const n = e.payload.size || (e.payload.commits || []).length; detail = n + " commit" + (n === 1 ? "" : "s") + " → "; }
+      else if (e.type === "CreateEvent") { verb = "create"; detail = (e.payload.ref_type || "repo") + " → "; }
+      else if (e.type === "PullRequestEvent") { verb = "pr"; detail = e.payload.action + " → "; }
+      else if (e.type === "IssuesEvent") { verb = "issue"; detail = e.payload.action + " → "; }
+      else if (e.type === "WatchEvent") { verb = "star"; detail = "→ "; }
+      else if (e.type === "ForkEvent") { verb = "fork"; detail = "→ "; }
+      else if (e.type === "ReleaseEvent") { verb = "release"; detail = (e.payload.release && e.payload.release.tag_name || "") + " → "; }
+      else if (e.type === "PublicEvent") { verb = "public"; detail = "→ "; }
+      else continue;
+      lines.push(`<div class="ln" style="--i:${lines.length}"><span class="pfx">&gt;</span><span class="lv">${verb}</span>`
+        + `<span class="ld">${esc(detail)}<a href="${esc(url)}">${esc(repo)}</a></span><span class="lt">${ago(e.created_at)}</span></div>`);
+    }
+    $("log").innerHTML = lines.length ? lines.join("") : '<div class="err">// no recent public events</div>';
+  } catch (e) {
+    $("log").innerHTML = `<div class="err">// event stream unavailable — ${esc(e.message)}</div>`;
+  }
+}
+
+calendarPanel(); languagesPanel(); activityPanel();
 </script>
+<noscript><div style="max-width:1160px;margin:0 auto;padding:20px;color:#7d8590">This dashboard renders live GitHub data and needs JavaScript.</div></noscript>
 </body>
 </html>

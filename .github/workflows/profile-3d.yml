@@ -18,9 +18,28 @@ jobs:
 
       - uses: yoshi389111/github-profile-3d-contrib@latest
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # PROFILE_3D_TOKEN (a PAT secret) lets the language pie see private
+          # repos; without it the default token covers public repos only.
+          GITHUB_TOKEN: ${{ secrets.PROFILE_3D_TOKEN || secrets.GITHUB_TOKEN }}
           USERNAME: ${{ github.repository_owner }}
           SETTING_JSON: conf/github-profile-3d-contrib.json
+
+      - name: Export language bytes for the dashboard
+        env:
+          GH_TOKEN: ${{ secrets.PROFILE_3D_TOKEN }}
+        run: |
+          # Aggregate byte counts only — no private repo names are published.
+          # Without PROFILE_3D_TOKEN this writes an empty file and the
+          # dashboard falls back to live public-repo aggregation.
+          if [ -n "$GH_TOKEN" ]; then
+            gh api --paginate "user/repos?affiliation=owner&per_page=100" \
+              --jq '.[] | select(.fork | not) | .full_name' |
+            while read -r repo; do gh api "repos/$repo/languages" || true; done |
+            jq -s 'reduce .[] as $m ({}; reduce ($m | to_entries[]) as $e (.; .[$e.key] += $e.value))
+                   | {languages: ., source: "all-repos"}' > docs/langs.json
+          else
+            echo '{"languages":{},"source":"public-fallback"}' > docs/langs.json
+          fi
 
       - name: Commit & Push
         run: |
